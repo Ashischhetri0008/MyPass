@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.example.mypass.InputsUI.AddAccountsDetails
 
 @Composable
 fun SetupNavGraph(
@@ -31,6 +32,9 @@ fun SetupNavGraph(
                 // Handle error or fallback behavior
             }
 
+        }
+        composable(Screen.AddData.route){
+          AddAccountsDetails()
         }
     }
 }
