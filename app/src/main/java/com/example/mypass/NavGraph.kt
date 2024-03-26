@@ -22,26 +22,22 @@ fun SetupNavGraph(
         composable(Screen.Detail.route,
             arguments = listOf(
                 navArgument("itemId"){
-                    type = NavType.IntType
+                    type = NavType.StringType
                 }
             )
         ) {
                 backStackEntry ->
-            val itemId = backStackEntry.arguments?.getInt("itemId")
+            val itemId = backStackEntry.arguments?.getString("itemId")
             if (itemId != null) {
-                DetailsView(itemId = itemId)
+                DetailsView(site = itemId)
             } else {
                 // Handle error or fallback behavior
             }
 
         }
-        composable(Screen.AddData.route, arguments = listOf(
-            navArgument("jsonString"){
-                type = NavType.StringType
-            }
-        )){
-            val jsonString=it.arguments!!.getString("jsonString")
-            AddAccountsDetails(jsonString!!,viewModel,navController)
+        composable(Screen.AddData.route
+        ){
+            AddAccountsDetails(viewModel,navController)
         }
     }
 }

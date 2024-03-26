@@ -25,7 +25,7 @@ import java.io.File
 
 
 @Composable
-fun DetailsView(itemId: Int?){
+fun DetailsView(site: String?){
 
     var listAcc:List<Account> = emptyList()
     var listUsers:List<Account.User> = emptyList()
@@ -43,7 +43,11 @@ fun DetailsView(itemId: Int?){
             if(file.exists()){
 //                    textSample(t1 = getDataString(context,"jsonFileName").toString())
                 listAcc=readJsonData(directory = jsonDataDir)
-                listUsers=listAcc[itemId!!].user
+                val exaccount=listAcc.find { it.site == site }
+                if (exaccount != null) {
+                    listUsers=exaccount.user
+                }
+
 
             }else{
                 // create data.json file if not existed
@@ -65,7 +69,7 @@ fun DetailsView(itemId: Int?){
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp)){
             items(listUsers) { user ->
-                DetailsCard(user.id,user.userName, user.email,user.pass)
+                DetailsCard(user.userName, user.email,user.pass)
             }
         }
     }
@@ -100,7 +104,7 @@ private fun readJsonData(directory: File): List<Account> {
 
 
 @Composable
-fun DetailsCard(id: Int,userName:String,email: String,pass: String, modifier: Modifier = Modifier) {
+fun DetailsCard(userName:String,email: String,pass: String, modifier: Modifier = Modifier) {
     Card(modifier = Modifier
         .fillMaxWidth()
         .padding(horizontal = 0.dp, vertical = 0.dp),
@@ -119,9 +123,4 @@ fun DetailsCard(id: Int,userName:String,email: String,pass: String, modifier: Mo
 private fun showToast(message: String) {
     val context= LocalContext.current
     Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-}
-@Composable
-@Preview
-fun DetailsViewPreview(){
-    DetailsView(1)
 }

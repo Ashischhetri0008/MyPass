@@ -33,10 +33,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.mypass.InputsUI.SampleText
 import com.example.mypass.schema.Account
 import com.example.mypass.sharedViewModel.SharedViewModel
 import com.google.gson.Gson
@@ -150,10 +148,10 @@ fun Scaffold(listAcc:List<Account>, navController:NavHostController,viewModel: S
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(listAcc) { item ->
-                    Account(item.id, item.site, navController)
+                    Account(item.site, navController)
                 }
             }
-            SampleText(t = viewModel.navigationArguments.value)
+            SampleText(text = viewModel.navigationArguments.value)
         }
     }
 }
@@ -166,10 +164,10 @@ fun Add_update_data(){
 }
 
 @Composable
-fun Account(itemId: Int, site: String,navController: NavHostController){
+fun Account(site: String,navController: NavHostController){
     Card(modifier = Modifier
         .fillMaxWidth()
-        .clickable { navController.navigate(route = "detail/$itemId") }
+        .clickable { navController.navigate(route = "detail/$site") }
         .padding(start = 0.dp, top = 0.dp, end = 0.dp, bottom = 0.dp),
         shape = RoundedCornerShape(15.dp)
     ){
@@ -189,8 +187,8 @@ fun Account(itemId: Int, site: String,navController: NavHostController){
 
 
 @Composable
-fun SimpleText(t1: String){
-    Text(text = t1)
+fun SampleText(text: String){
+    Text(text = text)
 }
 @Composable
 @Preview

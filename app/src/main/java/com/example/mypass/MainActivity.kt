@@ -16,7 +16,9 @@ import android.provider.DocumentsContract
 import android.util.Log
 import android.widget.Toast
 import androidx.core.net.toUri
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mypass.schema.Account
+import com.example.mypass.sharedViewModel.SharedViewModel
 import com.google.gson.Gson
 import java.io.File
 
@@ -25,23 +27,21 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var navController: NavHostController
     private lateinit var jsonDataDir:File
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             val userList = listOf(
                 Account(
-                    1,
                     "facebook",
                     listOf(
-                        Account.User(1, "ashis","user1@example.com", "password1")
+                        Account.User( "ashis","user1@example.com", "password1")
                     )
                 ),
                 Account(
-                    1,
+
                     "instagram",
                     listOf(
-                        Account.User(1, "ashis","user1@example.com", "password1")
+                        Account.User("ashis","user1@example.com", "password1")
                     )
                 )
             )
@@ -192,10 +192,8 @@ class MainActivity : ComponentActivity() {
                 }
 
             }
-//             Convert the list of User objects to a JSON string using Gson
         }else{
             try {
-                // Convert the list of User objects to a JSON string using Gson
                 val jsonString = Gson().toJson(userList)
                 // Write the JSON string to a file
                 val file = File(directory, fileName)
