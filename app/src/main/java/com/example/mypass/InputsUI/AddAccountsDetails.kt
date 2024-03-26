@@ -3,14 +3,17 @@ package com.example.mypass.InputsUI
 import android.content.Context
 import android.os.Environment
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,15 +23,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.mypass.getDataString
-import com.example.mypass.models.Accounts
+import com.example.mypass.schema.Account
+import com.example.mypass.sharedViewModel.SharedViewModel
 import com.google.gson.Gson
 import java.io.File
 
-
 @Composable
-fun AddAccountsDetails(){
+fun AddAccountsDetails(jsonData: String,viewModel: SharedViewModel){
     val context= LocalContext.current
-    var listAcc:List<Accounts> = emptyList()
+    var listAcc:List<Account> = emptyList()
     val downloadDir =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
     if (downloadDir.exists() && downloadDir.isDirectory) {
@@ -40,50 +43,26 @@ fun AddAccountsDetails(){
             val fileName=getDataString(context,"jsonFileName").toString()
             val file = File(jsonDataDir, fileName)
             if (file.exists()) {
-                listAcc=readJsonData(jsonDataDir)
-                textFiled(listAcc = listAcc)
+                listAcc= parsString(jsonData)
+                Column {
+                    val temp= add_data(listAcc)
+                    if(listAcc!=temp){
+                        listAcc=temp
+                    }
+                    SampleText(t = listAcc.toString())
+                }
+
             }else{
-                textFiled(listAcc = listAcc)
             }
-
         }
     }
-
 }
 
 @Composable
-private fun readJsonData(directory: File): List<Accounts> {
-    val context= LocalContext.current
-    val fileName = getDataString(context,"jsonFileName").toString()
-    val file = File(directory, fileName)
-    if (file.exists()) {
-        try {
-            // Read JSON content from the file
-            val jsonContent = file.readText()
-            // Initialize Gson instance
-            val gson = Gson()
-            // Deserialize JSON to array of Accounts objects
-            val accountsList = gson.fromJson(jsonContent, Array<Accounts>::class.java).toList()
-            return accountsList
-        }catch (e:Exception){
-            Log.d("MainActivity",e.message.toString())
-        }
-
-    } else {
-        Log.e("MainActivity", "JSON file does not exist.")
-    }
-    return emptyList()
-}
-fun getDataString(context: Context, key: String): String? {
-    val sharedPreferences = context.getSharedPreferences("dataFileName", Context.MODE_PRIVATE)
-    return sharedPreferences.getString(key, null)
-}
-
-@Composable
-fun textFiled(listAcc:List<Accounts>){
-    var acc:Accounts
+fun add_data(listAcc: List<Account>):List<Account>{
+    var updatedList by remember { mutableStateOf(listAcc) }
     Box(modifier = Modifier
-        .fillMaxSize()
+        .fillMaxWidth()
         .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 0.dp)
     ){
         Column {
@@ -103,7 +82,10 @@ fun textFiled(listAcc:List<Accounts>){
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("Email") }
+                label = { Text("Email") },
+                leadingIcon = {
+                    Icon(Icons.Outlined.AccountCircle, contentDescription = "Account")
+                }
             )
             var pass by remember { mutableStateOf("") }
             OutlinedTextField(
@@ -111,16 +93,94 @@ fun textFiled(listAcc:List<Accounts>){
                 onValueChange = { pass = it },
                 label = { Text("Password") }
             )
+
+            Button(onClick = {
+                val newAccount = Account(
+                    4,
+                    site,
+                    listOf(
+                        Account.User(1, userName, email, pass)
+                    )
+                )
+
+                updatedList= add_to_list(updatedList,newAccount)
+                site=""
+            }) {
+                Text(text = "Submit")
+            }
         }
+    }
+    return updatedList
+}
+
+
+private fun add_to_list(listAcc: List<Account>, account: Account): List<Account>{
+    if(account.site!="" && account.user[0].userName!="" && account.user[0].email!="" && account.user[0].pass!=""){
+        if(listAcc.any(){it.site==account.site}){
+            val index=listAcc.indexOf(account)
+//            listAcc[index].user.(account.user[0])
+            return listAcc
+        }else {
+            return listAcc.toMutableList().apply { add(account) }
+        }
+    }
+    return listAcc
+}
+
+private fun parsString(jsonSting: String): List<Account> {
+        try {
+            // Initialize Gson instance
+            val gson = Gson()
+            // Deserialize JSON to array of Accounts objects
+            //        sampleText("gson convert: "+accountsList.toString())
+            return gson.fromJson(jsonSting, Array<Account>::class.java).toList()
+        }catch (e:Exception){
+            Log.d("MainActivity",e.message.toString())
+        }
+    return emptyList()
+}
+
+
+private fun update_data_to_file( userList:List<Account>){
+    val fileName = "data.json"
+    val file = File(fileName)
+    if(file.exists()){
+        val jsonString = Gson().toJson(userList)
+        val data01=File("data01.json")
+        if(data01.exists()){
+
+        }else{
+
+
+        }
+//             Convert the list of User objects to a JSON string using Gson
+    }else{
 
     }
 
+}
+@Composable
+private fun ShowToast(message: String) {
+    val context= LocalContext.current
+    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+}
 
+fun saveDataString(context: Context, newKey: String, value: String) {
+    val sharedPreferences = context.getSharedPreferences("dataFileName", Context.MODE_PRIVATE)
+    val editor = sharedPreferences.edit()
+    editor.putString(newKey, value) // Use the new key to save the value
+    editor.apply()
+}
+
+// Function to retrieve a string value from SharedPreferences using a custom key
+fun getDataString(context: Context, key: String): String? {
+    val sharedPreferences = context.getSharedPreferences("dataFileName", Context.MODE_PRIVATE)
+    return sharedPreferences.getString(key, null)
 }
 
 
 @Composable
-fun text(t:String){
+fun SampleText(t:String){
     Text(text = t)
 }
 

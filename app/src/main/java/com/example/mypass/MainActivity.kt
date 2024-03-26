@@ -1,17 +1,12 @@
 package com.example.mypass
 
 
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import android.Manifest
 import android.app.Activity
-import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -20,11 +15,8 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
-import androidx.documentfile.provider.DocumentFile
-import com.example.mypass.models.Accounts
+import com.example.mypass.schema.Account
 import com.google.gson.Gson
 import java.io.File
 
@@ -38,28 +30,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val userList = listOf(
-                Accounts(
+                Account(
                     1,
                     "facebook",
                     listOf(
-                        Accounts.User(1, "ashis","user1@example.com", "password1"),
-                        Accounts.User(2, "ashis","user2@example.com", "password2")
+                        Account.User(1, "ashis","user1@example.com", "password1")
                     )
                 ),
-                Accounts(
+                Account(
                     1,
                     "instagram",
                     listOf(
-                        Accounts.User(1, "ashis","user1@example.com", "password1"),
-                        Accounts.User(2, "ashis","user2@example.com", "password2")
-                    )
-                ),
-                Accounts(
-                    1,
-                    "google",
-                    listOf(
-                        Accounts.User(1, "ashis","user1@example.com", "password1"),
-                        Accounts.User(2, "ashis","user2@example.com", "password2")
+                        Account.User(1, "ashis","user1@example.com", "password1")
                     )
                 )
             )
@@ -145,7 +127,7 @@ class MainActivity : ComponentActivity() {
                 if (jsonContent != null) {
                     // Process the JSON content
                     val gson = Gson()
-                    val accountsList= gson.fromJson(jsonContent, Array<Accounts>::class.java).toList()
+                    val accountsList= gson.fromJson(jsonContent, Array<Account>::class.java).toList()
                     showToast("dataDir is "+jsonDataDir.toString())
                     createJsonData(directory = jsonDataDir, userList = accountsList)
 
@@ -176,7 +158,7 @@ class MainActivity : ComponentActivity() {
         return null
     }
 
-    private fun createJsonData(directory: File, userList:List<Accounts>){
+    private fun createJsonData(directory: File, userList:List<Account>){
         val fileName = "data.json"
         val baseFileName = "data"
         var index = 1

@@ -1,10 +1,8 @@
-package com.example.mypass.models
+package com.example.mypass.schema
 
-import android.os.Parcelable
-
-data class Accounts(
+data class Account(
     val id: Int,
-    val site: String,
+    var site: String,
     val user: List<User>
 ) {
     data class User(

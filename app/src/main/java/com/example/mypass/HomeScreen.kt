@@ -22,10 +22,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,20 +32,27 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.mypass.models.Accounts
+import com.example.mypass.schema.Account
+import com.example.mypass.sharedViewModel.SharedViewModel
 import com.google.gson.Gson
 import java.io.File
 
+
+var file_content:String = ""
+
 @Composable
-fun HomeScreen(navController: NavHostController){
+fun HomeScreen(navController: NavHostController,viewModel: SharedViewModel){
     Box(modifier = Modifier
         .fillMaxSize()
         .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 0.dp),
 
     ){
-        var listAcc:List<Accounts> = emptyList()
+        var listAcc:List<Account> = remember {
+            mutableStateListOf()
+        }
         val context= LocalContext.current
         val downloadDir =
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -60,8 +65,8 @@ fun HomeScreen(navController: NavHostController){
                 val file =  File(jsonDataDir, fileName) // check for data.json file
                 if(file.exists()){
 //                    textSample(t1 = getDataString(context,"jsonFileName").toString())
-                    listAcc=readJsonData(directory = jsonDataDir)
-
+                    listAcc= readJsonData(directory = jsonDataDir)
+//                    SimpleText(t1 = listAcc.toString())
                 }else{
                     // no data.json file
                     showToast("No ${getDataString(context,"jsonFileName")}")
@@ -75,28 +80,31 @@ fun HomeScreen(navController: NavHostController){
             // Download dir not Found
             showToast("Download directory not found")
         }
+        viewModel.updateNavigationArguments(listAcc.toString())
         Scaffold(listAcc,navController){}
     }
 }
 
 
+fun readFilecontent(file: File): String{
+    return file.readText()
+}
 // Read JSON data from the file
 @Composable
-private fun readJsonData(directory: File): List<Accounts> {
+private fun readJsonData(directory: File): List<Account> {
     val context= LocalContext.current
     val fileName = getDataString(context,"jsonFileName").toString()
     val file = File(directory, fileName)
     if (file.exists()) {
         try {
             // Read JSON content from the file
-            val jsonContent = file.readText()
+            val jsonContent = readFilecontent(file)
             // Initialize Gson instance
             val gson = Gson()
             // Deserialize JSON to array of Accounts objects
-            val accountsList = gson.fromJson(jsonContent, Array<Accounts>::class.java).toList()
-            return accountsList
-        }catch (e:Exception){
-            Log.d("MainActivity",e.message.toString())
+            return gson.fromJson(jsonContent, Array<Account>::class.java).toList()
+        } catch (e: Exception) {
+            Log.d("MainActivity", e.message.toString())
         }
 
     } else {
@@ -119,12 +127,11 @@ fun getDataString(context: Context, key: String): String? {
 }
 
 @Composable
-fun Scaffold(listAcc:List<Accounts>,navController:NavHostController,function: () -> Unit) {
-
+fun Scaffold(listAcc:List<Account>, navController:NavHostController, function: () -> Unit) {
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                navController.navigate(route = "addData")
+                navController.navigate(route = "addData/${file_content}")
             }) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
@@ -139,6 +146,13 @@ fun Scaffold(listAcc:List<Accounts>,navController:NavHostController,function: ()
                 Account(item.id, item.site, navController)
             }
         }
+    }
+}
+
+@Composable
+fun Add_update_data(){
+    Box(modifier = Modifier.fillMaxSize()){
+        Text(text = "Ashis")
     }
 }
 
@@ -166,7 +180,11 @@ fun Account(itemId: Int, site: String,navController: NavHostController){
 
 
 @Composable
+fun SimpleText(t1: String){
+    Text(text = t1)
+}
+@Composable
 @Preview
 fun HomeScreenPreview(){
-    HomeScreen(navController = rememberNavController())
+    HomeScreen(navController = rememberNavController(), viewModel = SharedViewModel())
 }

@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.mypass.models.Accounts
+import com.example.mypass.schema.Account
 import com.google.gson.Gson
 import java.io.File
 
@@ -27,8 +27,8 @@ import java.io.File
 @Composable
 fun DetailsView(itemId: Int?){
 
-    var listAcc:List<Accounts> = emptyList()
-    var listUsers:List<Accounts.User> = emptyList()
+    var listAcc:List<Account> = emptyList()
+    var listUsers:List<Account.User> = emptyList()
     val context= LocalContext.current
     val downloadDir =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -73,7 +73,7 @@ fun DetailsView(itemId: Int?){
 
 // Read JSON data from the file
 @Composable
-private fun readJsonData(directory: File): List<Accounts> {
+private fun readJsonData(directory: File): List<Account> {
     val context= LocalContext.current
     val fileName = getDataString(context,"jsonFileName").toString()
     val file = File(directory, fileName)
@@ -86,7 +86,7 @@ private fun readJsonData(directory: File): List<Accounts> {
 
             // Deserialize JSON to array of Accounts objects
             //            val accountsArray = gson.fromJson(jsonContent, Accounts::class.java)
-            val accountsList = gson.fromJson(jsonContent, Array<Accounts>::class.java).toList()
+            val accountsList = gson.fromJson(jsonContent, Array<Account>::class.java).toList()
             return accountsList
         }catch (e:Exception){
             Log.d("MainActivity",e.message.toString())
