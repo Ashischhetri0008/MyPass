@@ -22,6 +22,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.example.mypass.getDataString
 import com.example.mypass.schema.Account
 import com.example.mypass.sharedViewModel.SharedViewModel
@@ -29,7 +31,7 @@ import com.google.gson.Gson
 import java.io.File
 
 @Composable
-fun AddAccountsDetails(jsonData: String,viewModel: SharedViewModel){
+fun AddAccountsDetails(jsonData: String,viewModel: SharedViewModel,navController: NavHostController){
     val context= LocalContext.current
     var listAcc:List<Account> = emptyList()
     val downloadDir =
@@ -43,14 +45,17 @@ fun AddAccountsDetails(jsonData: String,viewModel: SharedViewModel){
             val fileName=getDataString(context,"jsonFileName").toString()
             val file = File(jsonDataDir, fileName)
             if (file.exists()) {
-                listAcc= parsString(jsonData)
+
+                listAcc= parsString(viewModel.navigationArguments.value)
                 Column {
-                    val temp= add_data(listAcc)
+                    val temp= add_data(listAcc,navController)
                     if(listAcc!=temp){
                         listAcc=temp
+                        viewModel.updateNavigationArguments(Gson().toJson(listAcc))
                     }
                     SampleText(t = listAcc.toString())
                 }
+
 
             }else{
             }
@@ -59,7 +64,7 @@ fun AddAccountsDetails(jsonData: String,viewModel: SharedViewModel){
 }
 
 @Composable
-fun add_data(listAcc: List<Account>):List<Account>{
+fun add_data(listAcc: List<Account>,navController: NavHostController):List<Account>{
     var updatedList by remember { mutableStateOf(listAcc) }
     Box(modifier = Modifier
         .fillMaxWidth()
@@ -102,9 +107,8 @@ fun add_data(listAcc: List<Account>):List<Account>{
                         Account.User(1, userName, email, pass)
                     )
                 )
-
                 updatedList= add_to_list(updatedList,newAccount)
-                site=""
+                navController.navigate("home")
             }) {
                 Text(text = "Submit")
             }

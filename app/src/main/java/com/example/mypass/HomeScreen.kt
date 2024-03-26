@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.mypass.InputsUI.SampleText
 import com.example.mypass.schema.Account
 import com.example.mypass.sharedViewModel.SharedViewModel
 import com.google.gson.Gson
@@ -65,7 +67,7 @@ fun HomeScreen(navController: NavHostController,viewModel: SharedViewModel){
                 val file =  File(jsonDataDir, fileName) // check for data.json file
                 if(file.exists()){
 //                    textSample(t1 = getDataString(context,"jsonFileName").toString())
-                    listAcc= readJsonData(directory = jsonDataDir)
+                    listAcc= readJsonData(directory = jsonDataDir,viewModel)
 //                    SimpleText(t1 = listAcc.toString())
                 }else{
                     // no data.json file
@@ -80,8 +82,7 @@ fun HomeScreen(navController: NavHostController,viewModel: SharedViewModel){
             // Download dir not Found
             showToast("Download directory not found")
         }
-        viewModel.updateNavigationArguments(listAcc.toString())
-        Scaffold(listAcc,navController){}
+        Scaffold(listAcc,navController,viewModel){}
     }
 }
 
@@ -91,17 +92,22 @@ fun readFilecontent(file: File): String{
 }
 // Read JSON data from the file
 @Composable
-private fun readJsonData(directory: File): List<Account> {
+private fun readJsonData(directory: File,viewModel: SharedViewModel): List<Account> {
     val context= LocalContext.current
     val fileName = getDataString(context,"jsonFileName").toString()
     val file = File(directory, fileName)
     if (file.exists()) {
         try {
             // Read JSON content from the file
-            val jsonContent = readFilecontent(file)
+            var jsonContent = readFilecontent(file)
             // Initialize Gson instance
             val gson = Gson()
             // Deserialize JSON to array of Accounts objects
+            if(viewModel.navigationArguments.value==""){
+                viewModel.updateNavigationArguments(jsonContent) // set sharedView value
+            }else{
+                jsonContent=viewModel.navigationArguments.value
+            }
             return gson.fromJson(jsonContent, Array<Account>::class.java).toList()
         } catch (e: Exception) {
             Log.d("MainActivity", e.message.toString())
@@ -127,24 +133,27 @@ fun getDataString(context: Context, key: String): String? {
 }
 
 @Composable
-fun Scaffold(listAcc:List<Account>, navController:NavHostController, function: () -> Unit) {
+fun Scaffold(listAcc:List<Account>, navController:NavHostController,viewModel: SharedViewModel, function: () -> Unit) {
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                navController.navigate(route = "addData/${file_content}")
+                navController.navigate(route = "addData/$listAcc")
             }) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
         }
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(listAcc) { item ->
-                Account(item.id, item.site, navController)
+        Column {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(listAcc) { item ->
+                    Account(item.id, item.site, navController)
+                }
             }
+            SampleText(t = viewModel.navigationArguments.value)
         }
     }
 }

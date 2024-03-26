@@ -41,7 +41,7 @@ fun SetupNavGraph(
             }
         )){
             val jsonString=it.arguments!!.getString("jsonString")
-            AddAccountsDetails(jsonString!!,viewModel)
+            AddAccountsDetails(jsonString!!,viewModel,navController)
         }
     }
 }
