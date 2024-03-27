@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -30,18 +32,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
+import com.example.mypass.InputsUI.getDataFileName
 import com.example.mypass.schema.Account
 import com.example.mypass.sharedViewModel.SharedViewModel
 import com.google.gson.Gson
 import java.io.File
-
-
-var file_content:String = ""
 
 @Composable
 fun HomeScreen(navController: NavHostController,viewModel: SharedViewModel){
@@ -50,125 +48,68 @@ fun HomeScreen(navController: NavHostController,viewModel: SharedViewModel){
         .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 0.dp),
 
     ){
+        val context= LocalContext.current
         var listAcc:List<Account> = remember {
             mutableStateListOf()
         }
-        val context= LocalContext.current
-        val downloadDir =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        if (downloadDir.exists() && downloadDir.isDirectory) {
-            val jsonDataDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                "DataBase"
-            )
-            if (jsonDataDir.exists() && jsonDataDir.isDirectory){
-                val fileName= "data.json"
-                val file =  File(jsonDataDir, fileName) // check for data.json file
-                if(file.exists()){
-//                    textSample(t1 = getDataString(context,"jsonFileName").toString())
-                    listAcc= readJsonData(directory = jsonDataDir,viewModel)
-//                    SimpleText(t1 = listAcc.toString())
-                }else{
-                    // no data.json file
-                    showToast("No ${getDataString(context,"jsonFileName")}")
-                }
-
-            }else{
-                // DataBase does not exist
-                showToast("no Dir DataBase")
-            }
-        } else {
-            // Download dir not Found
-            showToast("Download directory not found")
+        try{
+            val jsonString=viewModel.navigationArguments.value
+            listAcc=Gson().fromJson(jsonString, Array<Account>::class.java).toList()
+        }catch (e:Exception){
+            Log.e("MianActivity","${e.message}")
+        }
+        if(listAcc.isEmpty()){
+         showToast(context,"Empty List")
         }
         Scaffold(listAcc,navController,viewModel){}
+
     }
 }
 
-
-fun readFilecontent(file: File): String{
-    return file.readText()
-}
-// Read JSON data from the file
-@Composable
-private fun readJsonData(directory: File,viewModel: SharedViewModel): List<Account> {
-    val context= LocalContext.current
-    val fileName = getDataString(context,"jsonFileName").toString()
-    val file = File(directory, fileName)
-    if (file.exists()) {
-        try {
-            // Read JSON content from the file
-            var jsonContent = readFilecontent(file)
-            // Initialize Gson instance
-            val gson = Gson()
-            // Deserialize JSON to array of Accounts objects
-            if(viewModel.navigationArguments.value==""){
-                viewModel.updateNavigationArguments(jsonContent) // set sharedView value
-            }else{
-                jsonContent=viewModel.navigationArguments.value
-            }
-            return gson.fromJson(jsonContent, Array<Account>::class.java).toList()
-        } catch (e: Exception) {
-            Log.d("MainActivity", e.message.toString())
-        }
-
-    } else {
-        Log.e("MainActivity", "JSON file does not exist.")
-    }
-    return emptyList()
-}
-
-// Show Toast Meassage
-@Composable
-private fun showToast(message: String) {
-    val context= LocalContext.current
-    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-}
-
-// Function to retrieve a string value from SharedPreferences using a custom key
-fun getDataString(context: Context, key: String): String? {
-    val sharedPreferences = context.getSharedPreferences("dataFileName", Context.MODE_PRIVATE)
-    return sharedPreferences.getString(key, null)
-}
 
 @Composable
 fun Scaffold(listAcc:List<Account>, navController:NavHostController,viewModel: SharedViewModel, function: () -> Unit) {
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                navController.navigate(route = "addData/$listAcc")
+                navController.navigate(route = "addData")
             }) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
         }
     ) { innerPadding ->
-        Column {
+        if(listAcc.isEmpty()){
+            Column(modifier = Modifier
+                .fillMaxSize(), // Fill the available space
+            verticalArrangement = Arrangement.Center, // Center vertically
+            horizontalAlignment = Alignment.CenterHorizontally
+                ){
+                SampleText(text = "No Readable Data")
+            }
+        }else{
             LazyColumn(
                 modifier = Modifier
                     .padding(innerPadding),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(listAcc) { item ->
-                    Account(item.site, navController)
+                    Account(listAcc.indexOf(item),item.site, navController)
                 }
             }
-            SampleText(text = viewModel.navigationArguments.value)
         }
     }
 }
 
-@Composable
-fun Add_update_data(){
-    Box(modifier = Modifier.fillMaxSize()){
-        Text(text = "Ashis")
-    }
-}
 
 @Composable
-fun Account(site: String,navController: NavHostController){
+fun Account(index: Int,site: String,navController: NavHostController){
     Card(modifier = Modifier
         .fillMaxWidth()
-        .clickable { navController.navigate(route = "detail/$site") }
-        .padding(start = 0.dp, top = 0.dp, end = 0.dp, bottom = 0.dp),
+        .clickable { navController.navigate(route = "detail/$index") }
+        .padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 0.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 10.dp
+        ),
         shape = RoundedCornerShape(15.dp)
     ){
         Row(modifier = Modifier.padding(10.dp)
@@ -185,13 +126,10 @@ fun Account(site: String,navController: NavHostController){
     }
 }
 
-
 @Composable
 fun SampleText(text: String){
     Text(text = text)
 }
-@Composable
-@Preview
-fun HomeScreenPreview(){
-    HomeScreen(navController = rememberNavController(), viewModel = SharedViewModel())
+private fun showToast(context: Context,message: String) {
+    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
 }

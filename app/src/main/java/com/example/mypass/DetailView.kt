@@ -19,89 +19,43 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.mypass.InputsUI.getDataFileName
 import com.example.mypass.schema.Account
+import com.example.mypass.sharedViewModel.SharedViewModel
 import com.google.gson.Gson
 import java.io.File
 
 
 @Composable
-fun DetailsView(site: String?){
+fun DetailsView(index: Int?,viewModel: SharedViewModel) {
 
-    var listAcc:List<Account> = emptyList()
-    var listUsers:List<Account.User> = emptyList()
-    val context= LocalContext.current
-    val downloadDir =
-        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-    if (downloadDir.exists() && downloadDir.isDirectory) {
-        val jsonDataDir = File(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-            "DataBase"
-        )
-        if (jsonDataDir.exists() && jsonDataDir.isDirectory){
-            val fileName= "data.json"
-            val file =  File(jsonDataDir, fileName) // check for data.json file
-            if(file.exists()){
-//                    textSample(t1 = getDataString(context,"jsonFileName").toString())
-                listAcc=readJsonData(directory = jsonDataDir)
-                val exaccount=listAcc.find { it.site == site }
-                if (exaccount != null) {
-                    listUsers=exaccount.user
+    if (viewModel.navigationArguments.value.isBlank()) {
+
+    } else {
+        val jsonString = viewModel.navigationArguments.value
+        val listAcc = Gson().fromJson(jsonString, Array<Account>::class.java).toList()
+        val exaccount = listAcc[index!!]
+        if (exaccount != null) {
+            val listUsers = exaccount.users
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 0.dp)
+            ) {
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(listUsers) { users ->
+                        DetailsCard(users.userName, users.email, users.password)
+                    }
                 }
-
-
-            }else{
-                // create data.json file if not existed
-                showToast("No ${getDataString(context,"jsonFileName")}")
-
             }
-
         }else{
-            showToast("no Dir DataBase")
-        }
-    } else {
-        showToast("Download directory not found")
-    }
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 0.dp)
-    ){
-
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp)){
-            items(listUsers) { user ->
-                DetailsCard(user.userName, user.email,user.pass)
-            }
+            SampleText(text = "No User ID")
         }
     }
 }
-
-// Read JSON data from the file
-@Composable
-private fun readJsonData(directory: File): List<Account> {
-    val context= LocalContext.current
-    val fileName = getDataString(context,"jsonFileName").toString()
-    val file = File(directory, fileName)
-    if (file.exists()) {
-        try {
-            // Read JSON content from the file
-            val jsonContent = file.readText()
-            // Initialize Gson instance
-            val gson = Gson()
-
-            // Deserialize JSON to array of Accounts objects
-            //            val accountsArray = gson.fromJson(jsonContent, Accounts::class.java)
-            val accountsList = gson.fromJson(jsonContent, Array<Account>::class.java).toList()
-            return accountsList
-        }catch (e:Exception){
-            Log.d("MainActivity",e.message.toString())
-        }
-
-    } else {
-        Log.e("MainActivity", "JSON file does not exist.")
-    }
-    return emptyList()
-}
-
 
 @Composable
 fun DetailsCard(userName:String,email: String,pass: String, modifier: Modifier = Modifier) {
@@ -117,6 +71,7 @@ fun DetailsCard(userName:String,email: String,pass: String, modifier: Modifier =
         }
     }
 }
+
 
 // Show Toast Meassage
 @Composable

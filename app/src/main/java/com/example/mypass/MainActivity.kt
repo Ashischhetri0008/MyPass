@@ -7,7 +7,6 @@ import androidx.activity.compose.setContent
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -15,90 +14,146 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.example.mypass.InputsUI.getDataFileName
+import com.example.mypass.InputsUI.setDataFileName
 import com.example.mypass.schema.Account
 import com.example.mypass.sharedViewModel.SharedViewModel
 import com.google.gson.Gson
 import java.io.File
 
 const val PICK_JSON_FILE = 3
+var pick_file_name=""
 class MainActivity : ComponentActivity() {
 
     private lateinit var navController: NavHostController
     private lateinit var jsonDataDir:File
+    private lateinit var viewModel: SharedViewModel
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val userList = listOf(
-                Account(
-                    "facebook",
-                    listOf(
-                        Account.User( "ashis","user1@example.com", "password1")
-                    )
-                ),
-                Account(
-
-                    "instagram",
-                    listOf(
-                        Account.User("ashis","user1@example.com", "password1")
-                    )
-                )
-            )
-
-            val downloadDir =
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            viewModel= viewModel()
+            val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             if (downloadDir.exists() && downloadDir.isDirectory) {
                 jsonDataDir = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
                     "DataBase"
                 )
                 if (jsonDataDir.exists() && jsonDataDir.isDirectory) {
-                    val fileName = getDataString(this,"jsonFileName").toString()
-                    val fileExists = checkIfFileExists(jsonDataDir,fileName ) // check for data.json file
-                    if (fileExists) {
-                        if(File(jsonDataDir,fileName).canRead()){
-                            showToast("read success")
-                            navController = rememberNavController()
-                            SetupNavGraph(navController = navController)
-                        }else{
-                            showToast("read unsuccess")
-                            openJsonFile(jsonDataDir.toUri(),this)
-                        }
-                    } else {
-                        val file2 = File(jsonDataDir,"data.json" ) // check for data.json file
-                        if (file2.exists()) {
-                            openJsonFile(jsonDataDir.toUri(),this)
-                        }else{
-                            createJsonData(directory = jsonDataDir,userList)
-                            val file=File(jsonDataDir,getDataString(this,"jsonFileName").toString())
-                            if(file.exists() && file.length()>0){
-                                navController = rememberNavController()
-                                SetupNavGraph(navController = navController)
+
+                    navController = rememberNavController()
+
+                    val filename = getDataFileName(this, "jsonFileName").toString()
+                    val file=File(jsonDataDir,filename)
+                    if(file.exists()){
+                        if(file.canWrite()&&file.canRead()) {
+                            val defaultName="data.json"
+                            val file2=File(jsonDataDir,defaultName)
+                            if(file2.exists()){
+                                showToast("Data: ${filename}")
+                                SetupNavGraph(navController = navController,viewModel)
+                            }else {
+                                val jsonString=file.readText()
+                                val listAcc=Gson().fromJson(jsonString, Array<Account>::class.java).toList()
+                                createJsonData(jsonDataDir,listAcc)
+                                SetupNavGraph(navController = navController,viewModel)
                             }
+
+                        }else {
+                            PickAndCreate(navController)
                         }
+
+                    }else{
+                        PickAndCreate(navController)
                     }
                 }else{
                     val created = jsonDataDir.mkdir()
                     // Folder created successfully
                     if (created) {
-                        showToast("Folder 'DataBase' created successfully.")
-                        createJsonData(directory = jsonDataDir,userList)
-                        val file=File(jsonDataDir,getDataString(this,"jsonFileName").toString())
-                        if(file.exists() && file.length()>0){
-                            navController = rememberNavController()
-                            SetupNavGraph(navController = navController)
-                        }
+                        createJsonData(jsonDataDir, emptyList())
                     } else {
                         // Failed to create folder
                         showToast("Failed to create folder 'DataBase'.")
                     }
                 }
-
             }
         }
     }
-    fun openJsonFile(pickerInitialUri: Uri, activity: Activity) {
+
+    @Composable
+    fun PickAndCreate(navController: NavHostController){
+        var clicked by remember { mutableStateOf(false) }
+        var pick by remember { mutableStateOf(false) }
+        Column (modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center // Center vertically
+
+        ){
+
+            Row(modifier = Modifier
+                .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Button to submit the form
+                Button(
+                    onClick = {
+                        pick=true
+                        clicked=true
+                    }) {
+                    Text(text = "Pick A File")
+                }
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+            Row(modifier = Modifier
+                .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Button to submit the form
+                Button(
+                    onClick = {
+                        pick=false
+                        clicked=true
+                    }) {
+                    Text(text = "Create New")
+                }
+            }
+
+        }
+        if(clicked){
+            if(pick){
+                openJsonFile(jsonDataDir.toUri(),this)
+                showToast("Data: ${getDataFileName(this,"jsonFileName").toString()}")
+                SetupNavGraph(navController = navController,viewModel)
+
+            }else{
+                createJsonData(jsonDataDir, emptyList())
+                showToast("Data: ${getDataFileName(this,"jsonFileName").toString()}")
+                SetupNavGraph(navController = navController,viewModel)
+            }
+        }
+    }
+
+
+    //----------------------------------------- File Picker Fucntion ---------------------------
+    fun openJsonFile(pickerInitialUri: Uri, activity: MainActivity) {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "application/json" // Specify the MIME type for JSON files
@@ -125,13 +180,16 @@ class MainActivity : ComponentActivity() {
                 val jsonContent = readFileFromUri(uri)
 
                 if (jsonContent != null) {
-                    // Process the JSON content
-                    val gson = Gson()
-                    val accountsList= gson.fromJson(jsonContent, Array<Account>::class.java).toList()
-                    showToast("dataDir is "+jsonDataDir.toString())
-                    createJsonData(directory = jsonDataDir, userList = accountsList)
 
-                    Log.d("MainActivity", "JSON content: $jsonContent")
+                    try{
+                        val gson = Gson()
+                        val accountsList = gson.fromJson(jsonContent, Array<Account>::class.java).toList()
+                        createJsonData(directory = jsonDataDir, userList = accountsList)
+                        showToast("Read Success")
+                        Log.e("MainActivity", "Conversion to JSON Object Success.")
+                    }catch (e:Exception){
+                        Log.e("MainActivity", "Conversion to JSON Object Failed.")
+                    }
                 } else {
                     // Failed to read JSON file
                     Log.e("MainActivity", "Failed to read JSON file")
@@ -145,6 +203,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // ----------------------------------------- Call Function ------------------------------------
     fun readFileFromUri(uri: Uri): String? {
         val contentResolver = applicationContext.contentResolver
         try {
@@ -157,17 +216,17 @@ class MainActivity : ComponentActivity() {
         }
         return null
     }
-
-    private fun createJsonData(directory: File, userList:List<Account>){
+    private fun createJsonData(directory: File, userList:List<Account>) {
+        val jsonString = Gson().toJson(userList)
+        viewModel.updateNavigationArguments(jsonString)
         val fileName = "data.json"
         val baseFileName = "data"
         var index = 1
         var dataFile: File
         val file = File(directory, fileName)
-        if(file.exists()){
-            val jsonString = Gson().toJson(userList)
-            val data01=File(directory,"data01.json")
-            if(data01.exists()){
+        if (file.exists()) {
+            val data01 = File(directory, "data01.json")
+            if (data01.exists()) {
                 do {
                     val fileName2 = "$baseFileName${String.format("%02d", index)}.json"
                     dataFile = File(directory, fileName2)
@@ -175,69 +234,40 @@ class MainActivity : ComponentActivity() {
                 } while (dataFile.exists())
                 try {
                     dataFile.writeText(jsonString)
-                    saveDataString(this,"jsonFileName",dataFile.name)
-
+                    setDataFileName(this, "jsonFileName", dataFile.name)
+                    showToast("Set: " + dataFile.name)
                 } catch (e: Exception) {
                     showToast("${e.message}")
                 }
-            }else{
-                dataFile=File(directory,"data01.json")
-                showToast("file: "+dataFile.name)
+            } else {
+                dataFile = File(directory, "data01.json")
+                showToast("Set: " + dataFile.name)
                 try {
                     dataFile.writeText(jsonString)
-                    saveDataString(this,"jsonFileName",dataFile.name)
+                    setDataFileName(this, "jsonFileName", dataFile.name)
 
                 } catch (e: Exception) {
                     showToast("${e.message}")
                 }
 
             }
-        }else{
+        } else {
             try {
-                val jsonString = Gson().toJson(userList)
-                // Write the JSON string to a file
-                val file = File(directory, fileName)
-                try {
-                    file.writeText(jsonString)
-                    saveDataString(this,"jsonFileName",fileName)
-                } catch (e: Exception) {
-                    showToast("${e.message}")
-                }
-
-                showToast("data.json created")
-
+                file.writeText(jsonString)
+                setDataFileName(this, "jsonFileName", fileName)
+                showToast("Set: ${file.name}")
             } catch (e: Exception) {
-                Log.e("MainActivity", "Error creating JSON file: ${e.message}")
+                showToast("${e.message}")
             }
-        }
 
+        }
     }
 
 
     // Show Toast Meassage
     private fun showToast(message: String) {
-
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
-
-    private fun checkIfFileExists(directory: File, fileName: String): Boolean {
-        val file = File(directory, fileName)
-        return file.exists()
-    }
-
-    fun saveDataString(context: Context, newKey: String, value: String) {
-        val sharedPreferences = context.getSharedPreferences("dataFileName", Context.MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
-        editor.putString(newKey, value) // Use the new key to save the value
-        editor.apply()
-    }
-
-    // Function to retrieve a string value from SharedPreferences using a custom key
-    fun getDataString(context: Context, key: String): String? {
-        val sharedPreferences = context.getSharedPreferences("dataFileName", Context.MODE_PRIVATE)
-        return sharedPreferences.getString(key, null)
-    }
-
 
 }
 

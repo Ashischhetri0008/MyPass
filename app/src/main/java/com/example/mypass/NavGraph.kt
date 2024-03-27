@@ -12,24 +12,25 @@ import com.example.mypass.sharedViewModel.SharedViewModel
 
 @Composable
 fun SetupNavGraph(
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel: SharedViewModel
 ){
-    val viewModel: SharedViewModel = viewModel()
+//    val viewModel: SharedViewModel = viewModel()
     NavHost(navController = navController, startDestination = Screen.Home.route) {
         composable(Screen.Home.route) {
             HomeScreen(navController = navController,viewModel)
         }
         composable(Screen.Detail.route,
             arguments = listOf(
-                navArgument("itemId"){
-                    type = NavType.StringType
+                navArgument("Index"){
+                    type = NavType.IntType
                 }
             )
         ) {
                 backStackEntry ->
-            val itemId = backStackEntry.arguments?.getString("itemId")
-            if (itemId != null) {
-                DetailsView(site = itemId)
+            val index = backStackEntry.arguments?.getInt("Index")
+            if (index != null) {
+                DetailsView(index = index,viewModel)
             } else {
                 // Handle error or fallback behavior
             }
