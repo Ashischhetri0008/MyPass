@@ -22,15 +22,15 @@ fun SetupNavGraph(
         }
         composable(Screen.Detail.route,
             arguments = listOf(
-                navArgument("Index"){
+                navArgument("itemId"){
                     type = NavType.IntType
                 }
             )
         ) {
                 backStackEntry ->
-            val index = backStackEntry.arguments?.getInt("Index")
-            if (index != null) {
-                DetailsView(index = index,viewModel)
+            val itemId = backStackEntry.arguments?.getInt("itemId")
+            if (itemId != null) {
+                DetailsView(itemId,viewModel)
             } else {
                 // Handle error or fallback behavior
             }

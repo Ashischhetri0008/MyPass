@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,13 +34,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.mypass.InputsUI.getDataFileName
 import com.example.mypass.InputsUI.setDataFileName
 import com.example.mypass.schema.Account
 import com.example.mypass.sharedViewModel.SharedViewModel
+import com.example.mypass.ui.theme.MyPassTheme
 import com.google.gson.Gson
+import kotlinx.coroutines.launch
 import java.io.File
 
 const val PICK_JSON_FILE = 3
@@ -51,48 +56,109 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            viewModel= viewModel()
-            val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            if (downloadDir.exists() && downloadDir.isDirectory) {
-                jsonDataDir = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    "DataBase"
-                )
-                if (jsonDataDir.exists() && jsonDataDir.isDirectory) {
+            MyPassTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    viewModel= viewModel()
+                    val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    if (downloadDir.exists() && downloadDir.isDirectory) {
+                        jsonDataDir = File(
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                            "DataBase"
+                        )
+                        if (jsonDataDir.exists() && jsonDataDir.isDirectory) {
+                            navController = rememberNavController()
+                            val filename = getDataFileName(this, "jsonFileName").toString()
+                            val file=File(jsonDataDir,filename)
+                            if(file.exists()){
+                                if(file.canWrite()&&file.canRead()) {
+                                    val defaultName="data.json"
+                                    val file2=File(jsonDataDir,defaultName)
+                                    if(file2.exists()){
+                                        showToast("DB: ${filename}")
+                                        viewModel.updateNavigationArguments(file.readText())
+                                        SetupNavGraph(navController = navController,viewModel)
+                                    }else {
+                                        showToast("${filename} -> data.json")
+                                        val jsonString=file.readText()
+                                        val listAcc=Gson().fromJson(jsonString, Array<Account>::class.java).toList()
+                                        createJsonData(jsonDataDir,listAcc)
+                                        SetupNavGraph(navController = navController,viewModel)
+                                    }
 
-                    navController = rememberNavController()
+                                }else {
+                                    showToast("${filename} permission denied")
+                                    PickAndCreate(navController)
+                                }
 
-                    val filename = getDataFileName(this, "jsonFileName").toString()
-                    val file=File(jsonDataDir,filename)
-                    if(file.exists()){
-                        if(file.canWrite()&&file.canRead()) {
-                            val defaultName="data.json"
-                            val file2=File(jsonDataDir,defaultName)
-                            if(file2.exists()){
-                                showToast("Data: ${filename}")
-                                SetupNavGraph(navController = navController,viewModel)
-                            }else {
-                                val jsonString=file.readText()
-                                val listAcc=Gson().fromJson(jsonString, Array<Account>::class.java).toList()
-                                createJsonData(jsonDataDir,listAcc)
-                                SetupNavGraph(navController = navController,viewModel)
+                            }else{
+                                showToast("!! ${filename}")
+//                                PickAndCreate(navController)
+                                var clicked by remember { mutableStateOf(false) }
+                                var pick by remember { mutableStateOf(false) }
+                                Column (modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.Center // Center vertically
+                                ){
+                                    Row(modifier = Modifier
+                                        .fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        // Button to submit the form
+                                        Button(
+                                            onClick = {
+                                                pick=true
+                                                clicked=true
+                                            }) {
+                                            Text(text = "Pick A File")
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(20.dp))
+                                    Row(modifier = Modifier
+                                        .fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        // Button to submit the form
+                                        Button(
+                                            onClick = {
+                                                pick=false
+                                                clicked=true
+                                            }) {
+                                            Text(text = "Create New")
+                                        }
+                                    }
+
+                                }
+                                if(clicked){
+                                    if(pick){
+                                        try{
+                                            openJsonFile(jsonDataDir.toUri(),this)
+                                        }catch (e:Exception){
+                                            showToast("file read error: ${e.message}")
+                                        }
+                                        if(viewModel.navigationArguments.value.isNotBlank()){
+                                            showToast("jsonString: "+viewModel.navigationArguments.value)
+                                            showToast("DB: ${getDataFileName(this,"jsonFileName").toString()}")
+                                            SetupNavGraph(navController = navController,viewModel)
+                                        }
+                                    }else{
+                                        createJsonData(jsonDataDir, emptyList())
+                                        showToast("Data: ${getDataFileName(this,"jsonFileName").toString()}")
+                                        SetupNavGraph(navController = navController,viewModel)
+                                    }
+                                }
                             }
-
-                        }else {
-                            PickAndCreate(navController)
+                        }else{
+                            val created = jsonDataDir.mkdir()
+                            // Folder created successfully
+                            if (created) {
+                                createJsonData(jsonDataDir, emptyList())
+                            } else {
+                                // Failed to create folder
+                                showToast("Failed to create folder 'DataBase'.")
+                            }
                         }
-
-                    }else{
-                        PickAndCreate(navController)
-                    }
-                }else{
-                    val created = jsonDataDir.mkdir()
-                    // Folder created successfully
-                    if (created) {
-                        createJsonData(jsonDataDir, emptyList())
-                    } else {
-                        // Failed to create folder
-                        showToast("Failed to create folder 'DataBase'.")
                     }
                 }
             }
@@ -105,9 +171,7 @@ class MainActivity : ComponentActivity() {
         var pick by remember { mutableStateOf(false) }
         Column (modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center // Center vertically
-
         ){
-
             Row(modifier = Modifier
                 .fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
@@ -140,14 +204,16 @@ class MainActivity : ComponentActivity() {
         if(clicked){
             if(pick){
                 openJsonFile(jsonDataDir.toUri(),this)
-                showToast("Data: ${getDataFileName(this,"jsonFileName").toString()}")
-                SetupNavGraph(navController = navController,viewModel)
-
             }else{
                 createJsonData(jsonDataDir, emptyList())
                 showToast("Data: ${getDataFileName(this,"jsonFileName").toString()}")
                 SetupNavGraph(navController = navController,viewModel)
             }
+        }
+        if(viewModel.navigationArguments.value.isNotBlank()){
+            showToast("jsonString: "+viewModel.navigationArguments.value)
+            showToast("DB: ${getDataFileName(this,"jsonFileName").toString()}")
+            SetupNavGraph(navController = navController,viewModel)
         }
     }
 
@@ -178,7 +244,7 @@ class MainActivity : ComponentActivity() {
             if (uri != null) {
                 // Read the selected JSON file
                 val jsonContent = readFileFromUri(uri)
-
+                viewModel.updateNavigationArguments(jsonContent.toString())
                 if (jsonContent != null) {
 
                     try{
@@ -218,7 +284,6 @@ class MainActivity : ComponentActivity() {
     }
     private fun createJsonData(directory: File, userList:List<Account>) {
         val jsonString = Gson().toJson(userList)
-        viewModel.updateNavigationArguments(jsonString)
         val fileName = "data.json"
         val baseFileName = "data"
         var index = 1
@@ -266,7 +331,7 @@ class MainActivity : ComponentActivity() {
 
     // Show Toast Meassage
     private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
 }

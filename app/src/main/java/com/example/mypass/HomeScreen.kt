@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.background
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,15 +21,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -43,10 +47,9 @@ import java.io.File
 
 @Composable
 fun HomeScreen(navController: NavHostController,viewModel: SharedViewModel){
-    Box(modifier = Modifier
+    Surface(modifier = Modifier
         .fillMaxSize()
         .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 0.dp),
-
     ){
         val context= LocalContext.current
         var listAcc:List<Account> = remember {
@@ -59,17 +62,19 @@ fun HomeScreen(navController: NavHostController,viewModel: SharedViewModel){
             Log.e("MianActivity","${e.message}")
         }
         if(listAcc.isEmpty()){
-         showToast(context,"Empty List")
+            showToast(context,"DB is empty")
+            navController.navigate(Screen.AddData.route)
         }
-        Scaffold(listAcc,navController,viewModel){}
-
+        Scaffold(listAcc,navController){}
     }
 }
 
 
 @Composable
-fun Scaffold(listAcc:List<Account>, navController:NavHostController,viewModel: SharedViewModel, function: () -> Unit) {
+fun Scaffold(listAcc:List<Account>, navController:NavHostController, function: () -> Unit) {
     Scaffold(
+        modifier = Modifier.fillMaxSize()
+            .padding(vertical = 5.dp),
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 navController.navigate(route = "addData")
@@ -84,13 +89,12 @@ fun Scaffold(listAcc:List<Account>, navController:NavHostController,viewModel: S
             verticalArrangement = Arrangement.Center, // Center vertically
             horizontalAlignment = Alignment.CenterHorizontally
                 ){
-                SampleText(text = "No Readable Data")
+                SampleText(text = "No Accounts")
             }
         }else{
             LazyColumn(
-                modifier = Modifier
+                modifier = Modifier.fillMaxSize()
                     .padding(innerPadding),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(listAcc) { item ->
                     Account(listAcc.indexOf(item),item.site, navController)
@@ -103,12 +107,15 @@ fun Scaffold(listAcc:List<Account>, navController:NavHostController,viewModel: S
 
 @Composable
 fun Account(index: Int,site: String,navController: NavHostController){
-    Card(modifier = Modifier
+    val context= LocalContext.current
+    ElevatedCard(modifier = Modifier
         .fillMaxWidth()
-        .clickable { navController.navigate(route = "detail/$index") }
-        .padding(start = 10.dp, top = 0.dp, end = 10.dp, bottom = 0.dp),
+        .clickable {
+            navController.navigate(route = "detail/$index")
+        }
+        .padding(start = 10.dp, top = 5.dp, end = 10.dp, bottom = 5.dp),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = 10.dp
+            defaultElevation = 6.dp
         ),
         shape = RoundedCornerShape(15.dp)
     ){
