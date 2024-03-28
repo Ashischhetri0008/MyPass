@@ -99,14 +99,11 @@ fun add_data_form(listAcc2: List<Account>, navController: NavHostController): Li
     var updatedList by remember { mutableStateOf(listAcc2) }
 
     // State variables for managing input values
-    var site by remember { mutableStateOf("") }
-    var userName by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var pass by remember { mutableStateOf("") }
+    var tfsite by remember { mutableStateOf("") }
+    var tfuserName by remember { mutableStateOf("") }
+    var tfemail by remember { mutableStateOf("") }
+    var tfpass by remember { mutableStateOf("") }
 
-    var expanded by remember {
-        mutableStateOf(false)
-    }
     val context= LocalContext.current
 
     Column(
@@ -122,6 +119,9 @@ fun add_data_form(listAcc2: List<Account>, navController: NavHostController): Li
             Column(modifier = Modifier
                 .fillMaxWidth(),
             ) {
+                var expanded by remember {
+                    mutableStateOf(false)
+                }
                 Row(modifier = Modifier
                     .fillMaxWidth(),
                 ) {
@@ -144,9 +144,9 @@ fun add_data_form(listAcc2: List<Account>, navController: NavHostController): Li
                             onClick = {
                                 expanded = false
                             }),
-                        value = site,
+                        value = tfsite,
                         onValueChange = {
-                            site = it
+                            tfsite = it
                            expanded = true
                         },
                         singleLine = true,
@@ -182,15 +182,15 @@ fun add_data_form(listAcc2: List<Account>, navController: NavHostController): Li
                                 LazyColumn(
                                     modifier = Modifier.heightIn(max = 300.dp),
                                 ) {
-                                    if (site.isNotEmpty()) {
+                                    if (tfsite.isNotEmpty()) {
                                         items(
                                             updatedList.map { it.site }.filter {
                                                 it.lowercase()
-                                                    .contains(site.lowercase())
+                                                    .contains(tfsite.lowercase())
                                             }
                                         ) {
                                             CategoryItems(title = it) { title ->
-                                                site = title
+                                                tfsite = title
                                                 expanded = false
                                             }
                                         }
@@ -199,7 +199,7 @@ fun add_data_form(listAcc2: List<Account>, navController: NavHostController): Li
                                             updatedList.map { it.site }.sorted()
                                         ) {
                                             CategoryItems(title = it) { title ->
-                                                site = title
+                                                tfsite = title
                                                 expanded = false
                                             }
                                         }
@@ -216,8 +216,8 @@ fun add_data_form(listAcc2: List<Account>, navController: NavHostController): Li
             Row(modifier = Modifier.fillMaxWidth()) {
                 // Text field for user name
                 OutlinedTextField(modifier = Modifier.fillMaxWidth(),
-                    value = userName,
-                    onValueChange = { userName = it },
+                    value = tfuserName,
+                    onValueChange = { tfuserName = it },
                     label = { Text("User Name") },
                     leadingIcon = {
                         Icon(
@@ -228,24 +228,116 @@ fun add_data_form(listAcc2: List<Account>, navController: NavHostController): Li
                 )
 
             }
-            // Email field
-            Row(modifier = Modifier.fillMaxWidth()) {
-                // Text field for email
-                OutlinedTextField(modifier = Modifier.fillMaxWidth(),
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    leadingIcon = {
-                        Icon(Icons.Outlined.Mail, contentDescription = "Email")
+            Column(modifier = Modifier
+                .fillMaxWidth(),
+            ) {
+                var expanded by remember {
+                    mutableStateOf(false)
+                }
+                Row(modifier = Modifier
+                    .fillMaxWidth(),
+                ) {
+                    // OutlinedTextField
+                    OutlinedTextField(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onGloballyPositioned { coordinates ->
+                                textFieldWidth = coordinates.size.width
+                            }
+                            .onFocusEvent { focusState ->
+                                expanded = if (focusState.isFocused) {
+                                    false
+                                }else{
+                                    false
+                                }
+                            }
+                            .clickable(
+                                onClick = {
+                                    expanded = false
+                                }),
+                        value = tfemail,
+                        onValueChange = {
+                            tfemail = it
+                            expanded = true
+                        },
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Mail,
+                                contentDescription = "Email"
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { expanded = !expanded }) {
+                                Icon(Icons.Outlined.ArrowDropDown, "Down arrow")
+                            }
+                        },
+                        label = { Text("Email") }
+                    )
+                }
+                // Popup
+                Box(
+                    modifier = Modifier.width(textFieldWidth.dp)
+                ) {
+                    Popup() {
+                        androidx.compose.animation.AnimatedVisibility(visible = expanded) {
+                            Card(
+                                modifier = Modifier
+                                    .padding(horizontal = 30.dp)
+                                    .width(textFieldWidth.dp),
+                                elevation = CardDefaults.cardElevation(
+                                    defaultElevation = 6.dp
+                                ),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                LazyColumn(
+                                    modifier = Modifier.heightIn(max = 300.dp),
+                                ) {
+                                    if(tfsite.isNotBlank()){
+                                        val filteredAccounts= updatedList.find { it.site.equals(tfsite, ignoreCase = true) }
+                                        val users = filteredAccounts?.users
+                                        if (users != null) {
+                                            items(
+                                                users.map { it.email }.filter {
+                                                    it.lowercase()
+                                                        .contains(tfemail.lowercase())
+                                                }
+                                            ) {
+                                                CategoryItems(title = it) { title ->
+                                                    tfemail = title
+                                                    tfuserName= users.find { it.email == title }?.userName.toString()
+                                                    tfpass = users.find { it.email == title }?.password.toString()
+                                                    expanded = false
+                                                }
+                                            }
+                                        }
+
+                                    }
+                                }
+                            }
+                        }
                     }
-                )
+                }
 
             }
+            // Email field
+//            Row(modifier = Modifier.fillMaxWidth()) {
+//                // Text field for email
+//                OutlinedTextField(modifier = Modifier.fillMaxWidth(),
+//                    value = email,
+//                    onValueChange = { email = it },
+//                    label = { Text("Email") },
+//                    leadingIcon = {
+//                        Icon(Icons.Outlined.Mail, contentDescription = "Email")
+//                    }
+//                )
+//
+//            }
             Row(modifier = Modifier.fillMaxWidth()) {
                 // Text field for password
                 OutlinedTextField(modifier = Modifier.fillMaxWidth(),
-                    value = pass,
-                    onValueChange = { pass = it },
+                    value = tfpass,
+                    onValueChange = { tfpass = it },
                     label = { Text("Password") },
                     leadingIcon = {
                         Icon(
@@ -264,9 +356,9 @@ fun add_data_form(listAcc2: List<Account>, navController: NavHostController): Li
             Button(
                 onClick = {
                 val newAccount = Account(
-                    site.trim(),
+                    tfsite.trim(),
                     listOf(
-                        Account.User(site.trim(),userName.trim(), email.trim(), pass.trim())
+                        Account.User(tfsite.trim(),tfuserName.trim(), tfemail.trim(), tfpass.trim())
                     )
                 )
                 updatedList = add_account_to_list(updatedList, newAccount)
@@ -293,14 +385,29 @@ private fun add_account_to_list(listAcc: List<Account>, account: Account): List<
         val existingAccount = listAcc.find { it.site == account.site }
 
         return if (existingAccount != null) {
-            // If the account already exists, add the user object to its list of users
-            val updatedUsers = existingAccount.users.toMutableList().apply { add(account.users[0]) }
-            val updatedExistingAccount = existingAccount.copy(users = updatedUsers)
-            val updatedList = listAcc.toMutableList().apply {
-                // Replace the existing account with the updated one
-                set(indexOf(existingAccount), updatedExistingAccount)
+
+//            if(existingAccount.users.find { it.email == account.users[0].email }?.email.toString()== account.users[0].email){
+            val existingUser = existingAccount.users.find { it.email == account.users[0].email }
+            if (existingUser != null) {
+                // Update user data
+                val updatedUsers = existingAccount.users.map { if (it.email == account.users[0].email) account.users[0] else it }
+                val updatedExistingAccount = existingAccount.copy(users = updatedUsers)
+                val updatedList = listAcc.toMutableList().apply {
+                    // Replace the existing account with the updated one
+                    set(indexOf(existingAccount), updatedExistingAccount)
+                }
+                updatedList
+            } else {
+                // Add new user to the list of users
+                val updatedUsers = existingAccount.users.toMutableList().apply { add(account.users[0]) }
+                val updatedExistingAccount = existingAccount.copy(users = updatedUsers)
+                val updatedList = listAcc.toMutableList().apply {
+                    // Replace the existing account with the updated one
+                    set(indexOf(existingAccount), updatedExistingAccount)
+                }
+                updatedList
             }
-            updatedList
+
         } else {
             // If the account doesn't exist, add the account object to the list
             listAcc + account
