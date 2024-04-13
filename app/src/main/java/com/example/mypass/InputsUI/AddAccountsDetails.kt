@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Mail
@@ -343,14 +344,13 @@ fun add_data_form(listAcc2: List<Account>, navController: NavHostController): Li
                     }
                 }
                 Spacer(modifier = Modifier.width(10.dp))
-                Button(
-                    onClick =
-                    {
-                        if(!tags.contains(tftag.trim())){
-                            tags=tags + tftag.trim()
-                        }
-                    },
-                ) {}
+
+                IconButton(
+                    onClick = { if(!tags.contains(tftag.trim())){ tags=tags + tftag.trim() } })
+                {
+                    Icon(Icons.Outlined.Add, "Add")
+                }
+
             }
 
             // User Name row
